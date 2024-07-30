@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myconfig
+data:
+  someinput: |
+    I am inputting {{.Env.ARGOCD_ENV_SOMEVAR}} here and {{.Env.ARGOCD_ENV_ANOTHERVAR}}
+    

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myapp
+  namespace: argocd
+spec:
+  destination:
+    namespace: default
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: target
+    plugin:
+      env:
+        - name: SOMEVAR
+          value: ""
+        - name: ANOTHERVAR
+          value: "foo"
+    repoURL: https://github.com/karlschriek/kustomize-gomplate-example.git
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+

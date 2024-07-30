@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+spec:
+  template:
+    spec:
+      volumes:
+        - name: shared
+          emptyDir: {}
+        - name: tmp-kustomize-gomplate
+          emptyDir: {}
+        - name: argocd-plugins-cm
+          configMap:
+            name: argocd-plugins-cm
+      initContainers:
+        - name: download-binaries
+          image: ubuntu:focal
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+
+              apt-get -qq update
+              apt-get -qq upgrade -y
+              apt-get -qq install -y wget
+
+              KUSTOMIZE_VER=4.3.0
+              echo "Download Kustomize ${KUSTOMIZE_VER}"
+              wget https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VER}/kustomize_v${KUSTOMIZE_VER}_linux_amd64.tar.gz
+              tar xzf kustomize_v${KUSTOMIZE_VER}_linux_amd64.tar.gz
+              chmod +x ./kustomize
+              mv ./kustomize /shared/bin/kustomize
+
+              GOMPLATE_VER=3.10.0
+              echo "Download Gomplate ${GOMPLATE_VER}"
+              wget https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VER}/gomplate_linux-amd64
+              chmod +x ./gomplate_linux-amd64
+              mv ./gomplate_linux-amd64 /shared/bin/gomplate
+
+              echo "Done."
+          volumeMounts:
+            - mountPath: /shared/bin
+              name: shared
+              subPath: bin
+      containers:
+        - name: sidecar-plugin-kustomize-gomplate
+          image: ubuntu:22.04
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              /var/run/argocd/argocd-cmp-server
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              subPath: sidecar-plugin-kustomize-gomplate.yaml
+              name: argocd-plugins-cm
+            - mountPath: /tmp
+              name: tmp-kustomize-gomplate
+            - mountPath: /usr/local/bin/kustomize
+              name: shared
+              subPath: bin/kustomize              
+            - mountPath: /usr/local/bin/gomplate
+              name: shared
+              subPath: bin/gomplate   
+

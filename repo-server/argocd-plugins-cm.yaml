@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-plugins-cm
+data:
+  sidecar-plugin-kustomize-gomplate.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: sidecar-plugin-kustomize-gomplate
+    spec:
+      version: v1.0
+      init:
+      discover:
+        fileName: "kustomization.yaml"
+      generate:
+        command: ["bash", "-c"]
+        args:
+          - |
+            set -eo pipefail && kustomize build . | gomplate
